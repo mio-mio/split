@@ -19,7 +19,7 @@ The split challenge introduces a more realistic scenario where we must reuse exi
 
 At first, I encountered a segmentation fault inside libc. Since no output was produced, I assumed the exploit had failed.
 
-<insert image: segfault + x/s>
+[Segv+x/s](segv_xsScreenshot2026-04-18153954.png)
 
 However, by inspecting the execution state, I realized that control had already reached system().
 
