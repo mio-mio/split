@@ -51,52 +51,52 @@ On x86_64 systems, function arguments are passed through registers. The first ar
 
 A normal function call like:
 
-system("/bin/cat flag.txt")
+　**system("/bin/cat flag.txt")**
 
 is internally executed as:
 
-rdi = pointer to "/bin/cat flag.txt"
-call system
+　**rdi = pointer to "/bin/cat flag.txt"**
+
+　**call system**
+
 
 In the split challenge, the function and its argument are separated. So we must reconstruct the call manually using a ROP chain:
 
-pop rdi
-→ set the argument
-call system
+　**pop rdi**　→ set the argument
+
+　**call system**
 
 This made it clear that exploitation is not just about redirecting execution, but also about correctly preparing the program state.
 
 
 ## 4. The Real Bug: Address Misunderstanding
 
-Initially, I found the string 
-＜画像＞
-strings -a -t x split | grep "/bin/cat"
-1060 /bin/cat flag.txt
+Initially, I found the string as below:
+
+![strings 6 grep cat](grep_catScreenshot2026-04-18161618.png)
 
 I assumed this meant the address was:
 
-0x400000 + 0x1060 = 0x401060
+ **0x400000 + 0x1060 = 0x401060**
 
 However, this was incorrect. The value 0x1060 is a file offset, not a runtime memory address.
 
-By inspecting the ELF sections
-<gazou>
-readelf -S split
-.data
-  file offset = 0x1050
-  virtual addr = 0x601050
+To understand where this offset actually belongs, I inspected the ELF sections:
 
-Since 0x1060 falls within the .data section range:
+![readelf 6 grep data](grep_dataScreenshot2026-04-18161804.png)
 
-0x1050 ≤ 0x1060 < 0x1072
+This showed that the .data section starts at file offset 0x1050 and is mapped to memory at 0x601050.
+
+Since 0x1060 falls within the range of the .data section:
+
+ **0x1050 ≤ 0x1060 < 0x1072**
 
 the string must reside in .data.
 
 To calculate the correct runtime address:
 
-offset within section = 0x1060 - 0x1050 = 0x10
-actual address = 0x601050 + 0x10 = 0x601060
+ **offset within section = 0x1060 - 0x1050 = 0x10**
+ **actual address = 0x601050 + 0x10 = 0x601060**
 
 This was confirmed in GDB:
 
