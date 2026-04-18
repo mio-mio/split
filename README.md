@@ -1,1 +1,110 @@
-# split
+# Reconstructing Function Calls: Why My Exploit Failed in "split"
+
+After understanding ret2win, I started solving the split challenge (x86_64) from ROP Emporium.
+[ROP Emporium - split challenge](https://ropemporium.com/challenge/split.html)
+
+This write-up focuses on the mistakes I made during the challenge and what they revealed about how function calls actually work in exploitation.
+
+
+## 1. From ret2win to a Real Problem
+
+In modern systems, defenses like NX (Non-Executable memory) prevent arbitrary code execution on the stack.
+
+Because of this, exploitation is no longer as simple as in ret2win, where we only redirect execution to an existing function.
+
+The split challenge introduces a more realistic scenario where we must reuse existing code by correctly setting up a function call.
+
+
+## 2. When system() Is Called but Nothing Happens
+
+At first, I encountered a segmentation fault inside libc. Since no output was produced, I assumed the exploit had failed.
+
+<insert image: segfault + x/s>
+
+However, by inspecting the execution state, I realized that control had already reached system().
+
+- RIP was inside libc
+- RDI contained a value (the argument)
+
+This means the function call itself had succeeded.
+
+The real issue was that the argument passed to system() was invalid:
+
+x/s 0x401060
+→ cannot access memory
+
+So the call was effectively:
+
+system(invalid_pointer)
+
+This made me realize that exploitation can fail at multiple stages:
+
+- Failing before reaching the function
+- Reaching the function but passing incorrect arguments
+- Successfully calling the function but losing control afterward
+
+
+## 3. The Missing Piece: How Function Calls Actually Work
+
+At this point, I realized that simply controlling the instruction pointer (RIP) is not enough.
+
+On x86_64 systems, function arguments are passed through registers. The first argument is passed in the RDI register.
+
+A normal function call like:
+
+system("/bin/cat flag.txt")
+
+is internally executed as:
+
+rdi = pointer to "/bin/cat flag.txt"
+call system
+
+In the split challenge, the function and its argument are separated. So we must reconstruct the call manually using a ROP chain:
+
+pop rdi
+→ set the argument
+call system
+
+This made it clear that exploitation is not just about redirecting execution, but also about correctly preparing the program state.
+
+
+## 4. The Real Bug: Address Misunderstanding
+
+Initially, I found the string 
+＜画像＞
+strings -a -t x split | grep "/bin/cat"
+1060 /bin/cat flag.txt
+
+I assumed this meant the address was:
+
+0x400000 + 0x1060 = 0x401060
+
+However, this was incorrect. The value 0x1060 is a file offset, not a runtime memory address.
+
+By inspecting the ELF sections
+<gazou>
+readelf -S split
+.data
+  file offset = 0x1050
+  virtual addr = 0x601050
+
+Since 0x1060 falls within the .data section range:
+
+0x1050 ≤ 0x1060 < 0x1072
+
+the string must reside in .data.
+
+To calculate the correct runtime address:
+
+offset within section = 0x1060 - 0x1050 = 0x10
+actual address = 0x601050 + 0x10 = 0x601060
+
+This was confirmed in GDB:
+
+x/s 0x601060
+→ "/bin/cat flag.txt"
+
+
+## 5. What "split" Really Taught Me
+
+
