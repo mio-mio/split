@@ -106,4 +106,21 @@ This was confirmed in GDB:
 
 ## 5. What "split" Really Taught Me
 
+The key takeaway from this challenge is that not all failures are the same, even if they look identical at first.
+
+A segmentation fault may appear as a single type of failure, but it can happen at different stages:
+
+ - Failing before reaching the target function
+ - Reaching the function but passing incorrect arguments
+ - Successfully calling the function but losing control afterward
+
+Understanding where the failure occurs is more important than simply noticing that the program crashed.
+
+Another important lesson is that runtime memory addresses are not the same as file offsets.
+
+I initially assumed that adding a base address to an offset would give the correct result. However, this only works when the data resides in the expected section.
+
+In reality, each section (such as .text or .data) is mapped to a different memory region, and the correct address must be calculated based on that mapping.
+
+
 
