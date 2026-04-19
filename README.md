@@ -96,12 +96,12 @@ the string must reside in .data.
 To calculate the correct runtime address:
 
  **offset within section = 0x1060 - 0x1050 = 0x10**
+
  **actual address = 0x601050 + 0x10 = 0x601060**
 
 This was confirmed in GDB:
 
-x/s 0x601060
-→ "/bin/cat flag.txt"
+![x/s0x601060](0x601060Screenshot2026-04-18222512.png)
 
 
 ## 5. What "split" Really Taught Me
