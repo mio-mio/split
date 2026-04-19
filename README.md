@@ -122,5 +122,15 @@ I initially assumed that adding a base address to an offset would give the corre
 
 In reality, each section (such as .text or .data) is mapped to a different memory region, and the correct address must be calculated based on that mapping.
 
+## 6. From split to ASLR
 
+This challenge showed how code execution is still possible under NX by reusing existing functions.
+
+However, this approach assumes that we already know the correct memory addresses.
+
+In real systems, this assumption does not always hold.
+
+Modern protections such as ASLR randomize memory layouts, making it much harder to rely on fixed addresses.
+
+In the next step, I will explore how address randomization affects exploitation.
 
