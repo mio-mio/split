@@ -30,11 +30,11 @@ This means the function call itself had succeeded.
 
 The real issue was that the argument passed to system() was invalid:
 
-x/s 0x401060 → cannot access memory
+　**x/s 0x401060 → cannot access memory**
 
 So the call was effectively:
 
-system(invalid_pointer)
+　**system(invalid_pointer)**
 
 This made me realize that exploitation can fail at multiple stages:
 
@@ -77,7 +77,7 @@ Initially, I found the string as below:
 
 I assumed this meant the address was:
 
- **0x400000 + 0x1060 = 0x401060**
+　**0x400000 + 0x1060 = 0x401060**
 
 However, this was incorrect. The value 0x1060 is a file offset, not a runtime memory address.
 
@@ -89,15 +89,15 @@ This showed that the .data section starts at file offset 0x1050 and is mapped to
 
 Since 0x1060 falls within the range of the .data section:
 
- **0x1050 ≤ 0x1060 < 0x1072**
+　**0x1050 ≤ 0x1060 < 0x1072**
 
 the string must reside in .data.
 
 To calculate the correct runtime address:
 
- **offset within section = 0x1060 - 0x1050 = 0x10**
+　**offset within section = 0x1060 - 0x1050 = 0x10**
 
- **actual address = 0x601050 + 0x10 = 0x601060**
+　**actual address = 0x601050 + 0x10 = 0x601060**
 
 This was confirmed in GDB:
 
